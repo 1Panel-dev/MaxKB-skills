@@ -5,9 +5,9 @@ MaxKB Skill: 根据用户问题调用指定智能体
 配合 list_agents 工具使用：
   1. 调用 list_agents() 获取已发布智能体列表（LLM 据此选择）
   2. LLM 根据用户问题和列表选出 agent_name
-  3. 调用 main(question, agent_name) 发起对话，返回回答
+  3. 调用 chat_to_agent(question, agent_name) 发起对话，返回回答
 
-入口函数: main(question: str, agent_name: str) -> str
+入口函数: chat_to_agent(question: str, agent_name: str) -> str
 """
 
 import os
@@ -211,7 +211,7 @@ def chat_with_agent(agent_id: str, question: str) -> str:
 
 # ── 入口函数 ──────────────────────────────────────────────────────────
 
-def main(question: str, agent_name: str) -> str:
+def chat_to_agent(question: str, agent_name: str) -> str:
     """
     调用指定智能体并返回回答。
 
@@ -239,7 +239,7 @@ if __name__ == "__main__":
     MAXKB_TOKEN = _login()  # 预先登录获取 token，验证环境变量配置是否正确
 
     if len(sys.argv) >= 3:
-        print(main(sys.argv[1], sys.argv[2]))
+        print(chat_to_agent(sys.argv[1], sys.argv[2]))
     else:
         # 仅列出已发布智能体，用于调试
         print(list_agents())
