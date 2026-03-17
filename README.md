@@ -47,7 +47,7 @@ MaxKB-skills/
 ## 环境要求
 
 - Python 3.7+
-- 可访问的 MaxKB 实例（v1.x）
+- 可访问的 MaxKB 实例（v2.x）
 - （可选）`python-dotenv`：用于自动加载 `.env` 文件
 
   ```bash
