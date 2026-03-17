@@ -42,6 +42,8 @@ if ENV_FILE.exists():
 MAXKB_DOMAIN = os.environ.get("MAXKB_DOMAIN", "http://127.0.0.1:8080")
 MAXKB_TOKEN = os.environ.get("MAXKB_TOKEN", "")
 MAXKB_WORKSPACE_ID = os.environ.get("MAXKB_WORKSPACE_ID", "default")
+MAXKB_USERNAME = os.environ.get("MAXKB_USERNAME", "")
+MAXKB_PASSWORD = os.environ.get("MAXKB_PASSWORD", "")
 
 
 # ── 内部 HTTP 工具 ────────────────────────────────────────────────────
@@ -123,6 +125,19 @@ def _post_sse(path: str, body: dict, token: str) -> str:
     except URLError as e:
         raise RuntimeError(f"SSE POST {path} 请求失败: {e}") from e
     return "".join(chunks)
+
+def _login() -> str:
+    if MAXKB_USERNAME and  MAXKB_PASSWORD:
+        resp = _post_json(
+            "/admin/api/user/login",
+            {"username": MAXKB_USERNAME, "password": MAXKB_PASSWORD},
+        )
+        token = resp.get("data", {}).get("token", "")
+        if not token:
+            raise RuntimeError(f"登录失败，响应：{json.dumps(resp, ensure_ascii=False)}")
+        return token
+    else:
+        return MAXKB_TOKEN
 
 
 # ── 核心逻辑 ──────────────────────────────────────────────────────────
@@ -220,6 +235,8 @@ def main(question: str, agent_name: str) -> str:
 
 if __name__ == "__main__":
     import sys
+
+    MAXKB_TOKEN = _login()  # 预先登录获取 token，验证环境变量配置是否正确
 
     if len(sys.argv) >= 3:
         print(main(sys.argv[1], sys.argv[2]))
