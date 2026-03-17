@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """
-MaxKB Skill: 根据用户问题自动选择最合适的智能体并调用
+MaxKB Skill: 根据用户问题调用指定智能体
 
-流程：
-  1. 获取所有已发布智能体（id / name / desc）
-  2. 根据关键词匹配打分，选出最相关的智能体
-  3. 创建会话并发送问题，解析 SSE 响应
-  4. 返回所选智能体名称及其回答
+配合 list_agents 工具使用：
+  1. 调用 list_agents() 获取已发布智能体列表（LLM 据此选择）
+  2. LLM 根据用户问题和列表选出 agent_name
+  3. 调用 main(question, agent_name) 发起对话，返回回答
 
-入口函数: main(question: str) -> str
+入口函数: main(question: str, agent_name: str) -> str
 """
 
 import os
 import json
-import re
 from urllib import request, parse
 from urllib.error import HTTPError, URLError
 from pathlib import Path
@@ -42,7 +40,7 @@ if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 
 MAXKB_DOMAIN = os.environ.get("MAXKB_DOMAIN", "http://127.0.0.1:8080")
-MAXKB_TOKEN = os.environ.get("MAXKB_TOKEN", "user-5beabebc2ea15371e44a4222ae4e5fe5")
+MAXKB_TOKEN = os.environ.get("MAXKB_TOKEN", "")
 MAXKB_WORKSPACE_ID = os.environ.get("MAXKB_WORKSPACE_ID", "default")
 
 
@@ -149,33 +147,22 @@ def get_published_agents() -> list:
     return agents
 
 
-def _score(agent: dict, question: str) -> int:
-    """
-    计算问题与智能体的相关性得分。
-    策略：
-      - 提取中英文 token（英文按单词，中文按字符）
-      - 统计智能体名称 + 描述中命中问题的 token 数
-    名称命中权重是描述的 3 倍。
-    """
-    def tokenize(text: str) -> list:
-        # 英文单词
-        words = re.findall(r'[a-zA-Z0-9]+', text.lower())
-        # 中文字符
-        chars = re.findall(r'[\u4e00-\u9fff]', text)
-        return words + chars
-
-    q_tokens = set(tokenize(question))
-    name_tokens = set(tokenize(agent["name"]))
-    desc_tokens = set(tokenize(agent["desc"]))
-
-    return len(q_tokens & name_tokens) * 3 + len(q_tokens & desc_tokens)
+def list_agents() -> str:
+    """返回已发布智能体的 name 和 desc 列表（JSON 字符串），供 LLM 选择。"""
+    agents = get_published_agents()
+    return json.dumps(
+        [{"name": a["name"], "desc": a["desc"]} for a in agents],
+        ensure_ascii=False,
+    )
 
 
-def select_agent(agents: list, question: str) -> dict:
-    """从已发布智能体列表中选出与问题最相关的一个。"""
-    if len(agents) == 1:
-        return agents[0]
-    return max(agents, key=lambda a: _score(a, question))
+def find_agent_by_name(agents: list, agent_name: str) -> dict:
+    """按名称精确匹配智能体，找不到则抛出异常。"""
+    for a in agents:
+        if a["name"] == agent_name:
+            return a
+    names = ", ".join(a["name"] for a in agents)
+    raise RuntimeError(f"未找到名为 '{agent_name}' 的智能体，可用：{names}")
 
 
 def chat_with_agent(agent_id: str, question: str) -> str:
@@ -209,20 +196,21 @@ def chat_with_agent(agent_id: str, question: str) -> str:
 
 # ── 入口函数 ──────────────────────────────────────────────────────────
 
-def main(question: str) -> str:
+def main(question: str, agent_name: str) -> str:
     """
-    根据用户问题自动选择智能体并返回回答。
+    调用指定智能体并返回回答。
 
     参数:
-        question: 用户的问题文本
+        question:   用户的问题文本
+        agent_name: 由 LLM 根据 list_agents() 结果选定的智能体名称
 
     返回:
         JSON 字符串，包含：
-          - agent_name: 被选中的智能体名称
+          - agent_name: 实际调用的智能体名称
           - answer:     智能体的回答内容
     """
     agents = get_published_agents()
-    selected = select_agent(agents, question)
+    selected = find_agent_by_name(agents, agent_name)
     answer = chat_with_agent(selected["id"], question)
     return json.dumps(
         {"agent_name": selected["name"], "answer": answer},
@@ -233,5 +221,8 @@ def main(question: str) -> str:
 if __name__ == "__main__":
     import sys
 
-    q = sys.argv[1] if len(sys.argv) > 1 else "你好，请介绍一下你自己"
-    print(main(q))
+    if len(sys.argv) >= 3:
+        print(main(sys.argv[1], sys.argv[2]))
+    else:
+        # 仅列出已发布智能体，用于调试
+        print(list_agents())

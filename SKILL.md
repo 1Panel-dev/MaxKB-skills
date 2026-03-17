@@ -1,35 +1,68 @@
 ---
 name: chat_to_agents
-description: 根据用户问题自动查询已发布智能体列表，选出最相关的智能体并调用，返回该智能体的回答。
+description: 查询已发布智能体列表供 LLM 选择，再按指定智能体名称发起对话并返回回答。
 ---
 
 # chat_to_agents — 智能路由与调用
 
 ## 功能描述
 
-用户提问时，Skill 自动完成以下三个步骤：
+本 Skill 提供两个工具函数，配合宿主智能体的 LLM 完成路由与调用：
 
-1. **查询智能体列表** — 从 MaxKB 工作空间获取所有已发布（`is_publish=true`）的智能体（包含 id / name / desc）。
-2. **选择最相关智能体** — 对问题与每个智能体的名称、描述进行关键词匹配打分，选出得分最高的智能体。
-3. **调用智能体** — 创建会话，以 SSE 流式方式发送问题，收集完整回答后返回。
+| 函数           | 作用                                                                 |
+|----------------|----------------------------------------------------------------------|
+| `list_agents`  | 返回所有已发布智能体的 name 和 desc，供 LLM 判断选择                 |
+| `main`         | 按 LLM 指定的 `agent_name` 调用对应智能体，返回回答                 |
 
-## 调用示例
+## 推荐调用流程
 
-```bash
-python3 scripts/chat_to_agents.py "向我的say_hello说hello"
+```
+用户提问
+   │
+   ▼
+LLM 调用 list_agents()          ← 获取智能体列表
+   │  返回 [{"name":..., "desc":...}, ...]
+   ▼
+LLM 根据问题选出最合适的 agent_name
+   │
+   ▼
+LLM 调用 main(question, agent_name)  ← 发起对话
+   │  返回 {"agent_name":..., "answer":...}
+   ▼
+将 answer 返回给用户
 ```
 
-| 参数       | 类型   | 说明           |
-|------------|--------|----------------|
-| `question` | string | 用户的问题文本 |
+## list_agents
 
-## 返回格式
+```bash
+python3 scripts/main.py 
+```
 
-JSON 字符串，包含：
+无需参数，返回 JSON 数组：
+
+```json
+[
+  {"name": "客服助手", "desc": "处理用户常见问题"},
+  {"name": "代码助手", "desc": "辅助编写和审查代码"}
+]
+```
+
+## chat_to_agent
+
+```bash
+python3 scripts/main.py <question> <agent_name>
+```
+
+| 参数         | 类型   | 说明                                 |
+|--------------|--------|--------------------------------------|
+| `question`   | string | 用户的问题文本                       |
+| `agent_name` | string | 由 LLM 从 list_agents 结果中选定的名称 |
+
+返回 JSON 字符串：
 
 | 字段         | 类型   | 说明               |
 |--------------|--------|--------------------|
-| `agent_name` | string | 被选中的智能体名称 |
+| `agent_name` | string | 实际调用的智能体名称 |
 | `answer`     | string | 智能体的回答内容   |
 
 示例：
@@ -41,12 +74,6 @@ JSON 字符串，包含：
 }
 ```
 
-## 智能体选择算法
-
-- 提取问题与智能体（名称 + 描述）中的中英文 token（英文按单词、中文按字符）
-- 计算交集大小；**名称命中权重为描述的 3 倍**
-- 若只有一个已发布智能体，直接使用
-
 ## 环境变量
 
 | 变量                  | 说明                          | 默认值                  |
@@ -54,3 +81,5 @@ JSON 字符串，包含：
 | `MAXKB_DOMAIN`        | MaxKB 服务地址                | `http://127.0.0.1:8080` |
 | `MAXKB_TOKEN`         | Bearer Token（管理员 API Key）| —                       |
 | `MAXKB_WORKSPACE_ID`  | 工作空间 ID                   | `default`               |
+
+
