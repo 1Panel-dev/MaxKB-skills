@@ -71,7 +71,7 @@ cp .env.example .env
 编辑 `.env`：
 
 ```env
-MAXKB_DOMAIN=http://127.0.0.1:8080
+MAXKB_DOMAIN=<maxkb_domain>
 MAXKB_USERNAME=admin
 MAXKB_PASSWORD=admin123
 MAXKB_WORKSPACE_ID=default
@@ -115,7 +115,7 @@ python3 scripts/main.py "Python 里如何读取文件？" "代码助手"
 
 | 变量                 | 说明                              | 默认值                    |
 |----------------------|-----------------------------------|---------------------------|
-| `MAXKB_DOMAIN`       | MaxKB 服务地址                    | `http://127.0.0.1:8080`   |
+| `MAXKB_DOMAIN`       | MaxKB 服务地址                    | `<maxkb_domain>`          | 
 | `MAXKB_TOKEN`        | Bearer Token（管理员 API Key）    | —                         |
 | `MAXKB_WORKSPACE_ID` | 工作空间 ID                       | `default`                 |
 | `MAXKB_USERNAME`     | 登录用户名（优先于 `MAXKB_TOKEN`）| —                         |

@@ -39,7 +39,7 @@ ENV_FILE = SKILL_DIR / ".env"
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 
-MAXKB_DOMAIN = os.environ.get("MAXKB_DOMAIN", "http://127.0.0.1:8080")
+MAXKB_DOMAIN = os.environ.get("MAXKB_DOMAIN", "<maxkb_domain>")
 MAXKB_TOKEN = os.environ.get("MAXKB_TOKEN", "")
 MAXKB_WORKSPACE_ID = os.environ.get("MAXKB_WORKSPACE_ID", "default")
 MAXKB_USERNAME = os.environ.get("MAXKB_USERNAME", "")
