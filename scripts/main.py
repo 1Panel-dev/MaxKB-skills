@@ -145,7 +145,7 @@ def _login() -> str:
 def get_published_agents() -> list:
     """返回所有已发布智能体，每条包含 id / name / desc。"""
     resp = _get(
-        f"/admin/api/workspace/{MAXKB_WORKSPACE_ID}/application/1/100"
+        f"/admin/api/workspace/{MAXKB_WORKSPACE_ID}/application/1/10000"
     )
     records = resp.get("data", {}).get("records", [])
     agents = [
