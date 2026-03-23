@@ -71,26 +71,36 @@ cp .env.example .env
 编辑 `.env`：
 
 ```env
+# ==================== 必填配置 ====================
+
 # MaxKB 服务地址（必填）
 MAXKB_DOMAIN=http://localhost:8080
 
-# MaxKB API 前缀（可选）
-# 如果 MaxKB 部署在子路径下（如 http://example.com/mk），配置此项为 /mk
-# 如果 MaxKB 部署在根路径，留空即可
-# MAXKB_API_PREFIX=/mk
+# ==================== 选填配置 ====================
 
-# MaxKB 认证（二选一：Token 或 用户名密码）
+# MaxKB API 前缀（选填，默认 /admin）
+# - 标准 MaxKB 部署：无需配置（默认 /admin）
+# - 子路径部署（如 http://example.com/mk）：配置为 /mk
+# - 根路径无前缀：配置为空字符串 ""
+MAXKB_API_PREFIX=/admin
+
+# MaxKB 工作空间 ID（选填，默认 default）
+MAXKB_WORKSPACE_ID=default
+
+# ==================== 认证配置（二选一）====================
+
+# 方式 1：用户名 + 密码（优先级高）
 MAXKB_USERNAME=admin
 MAXKB_PASSWORD=admin123
-# MAXKB_TOKEN=your_token_here
 
-# MaxKB 工作空间 ID（可选，默认为 default）
-MAXKB_WORKSPACE_ID=default
+# 方式 2：Token（如果配置了用户名密码，此项被忽略）
+# MAXKB_TOKEN=your_token_here
 ```
 
 > **提示**：
-> - 用户名/密码与 Token 可同时配置，用户名/密码优先级更高
-> - 如果 MaxKB 部署在子路径下（如 `http://example.com/mk`），请配置 `MAXKB_API_PREFIX=/mk`
+> - `MAXKB_API_PREFIX`：标准部署无需修改，只有非标准部署才需要配置
+> - 认证方式：推荐配置用户名密码，系统会自动登录获取 Token
+> - 如果同时配置了用户名密码和 Token，系统会使用用户名密码登录
 
 ### 2. 列出已发布智能体
 
@@ -126,14 +136,18 @@ python3 scripts/main.py "Python 里如何读取文件？" "代码助手"
 
 ## 环境变量
 
-| 变量                 | 说明                              | 默认值                    |
-|----------------------|-----------------------------------|---------------------------|
-| `MAXKB_DOMAIN`       | MaxKB 服务地址                    | `<maxkb_domain>`          | 
-| `MAXKB_API_PREFIX`   | **（可选）** API 路径前缀，适用于子路径部署 | `/admin` |
-| `MAXKB_TOKEN`        | Bearer Token（管理员 API Key）    | —                         |
-| `MAXKB_WORKSPACE_ID` | 工作空间 ID                       | `default`                 |
-| `MAXKB_USERNAME`     | 登录用户名（优先于 `MAXKB_TOKEN`）| —                         |
-| `MAXKB_PASSWORD`     | 登录密码（优先于 `MAXKB_TOKEN`）  | —                         |
+| 变量                 | 必填 | 说明                              | 默认值                    |
+|----------------------|------|-----------------------------------|---------------------------|
+| `MAXKB_DOMAIN`       | ✅ 是 | MaxKB 服务地址                    | `<maxkb_domain>`          | 
+| `MAXKB_API_PREFIX`   | ❌ 否 | API 路径前缀，适用于子路径部署     | `/admin` |
+| `MAXKB_TOKEN`        | ⚠️ 二选一 | Bearer Token（管理员 API Key）    | —                         |
+| `MAXKB_USERNAME`     | ⚠️ 二选一 | 登录用户名（优先于 `MAXKB_TOKEN`）| —                         |
+| `MAXKB_PASSWORD`     | ⚠️ 二选一 | 登录密码（优先于 `MAXKB_TOKEN`）  | —                         |
+| `MAXKB_WORKSPACE_ID` | ❌ 否 | 工作空间 ID                       | `default`                 |
+
+**说明**：
+- `MAXKB_API_PREFIX`：标准 MaxKB 部署无需配置（默认 `/admin`），子路径部署需配置（如 `/mk`）
+- 认证方式：配置 `MAXKB_USERNAME` + `MAXKB_PASSWORD` **或** `MAXKB_TOKEN`，前者优先级更高
 
 ### MAXKB_API_PREFIX 使用说明
 
