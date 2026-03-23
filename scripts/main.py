@@ -40,7 +40,10 @@ if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 
 MAXKB_DOMAIN = os.environ.get("MAXKB_DOMAIN", "<maxkb_domain>")
-MAXKB_API_PREFIX = os.environ.get("MAXKB_API_PREFIX", "").rstrip("/")
+# MaxKB API 路径前缀，默认为 /admin（标准 MaxKB 部署）
+# 如果 MaxKB 部署在子路径下（如 http://example.com/mk），配置为 /mk
+# 如果 MaxKB 部署在根路径且无 /admin 前缀，留空即可
+MAXKB_API_PREFIX = os.environ.get("MAXKB_API_PREFIX", "/admin").rstrip("/")
 MAXKB_TOKEN = os.environ.get("MAXKB_TOKEN", "")
 MAXKB_WORKSPACE_ID = os.environ.get("MAXKB_WORKSPACE_ID", "default")
 MAXKB_USERNAME = os.environ.get("MAXKB_USERNAME", "")

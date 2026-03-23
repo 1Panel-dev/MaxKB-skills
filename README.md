@@ -129,7 +129,7 @@ python3 scripts/main.py "Python 里如何读取文件？" "代码助手"
 | 变量                 | 说明                              | 默认值                    |
 |----------------------|-----------------------------------|---------------------------|
 | `MAXKB_DOMAIN`       | MaxKB 服务地址                    | `<maxkb_domain>`          | 
-| `MAXKB_API_PREFIX`   | **（可选）** API 路径前缀，适用于子路径部署 | `""` (空字符串) |
+| `MAXKB_API_PREFIX`   | **（可选）** API 路径前缀，适用于子路径部署 | `/admin` |
 | `MAXKB_TOKEN`        | Bearer Token（管理员 API Key）    | —                         |
 | `MAXKB_WORKSPACE_ID` | 工作空间 ID                       | `default`                 |
 | `MAXKB_USERNAME`     | 登录用户名（优先于 `MAXKB_TOKEN`）| —                         |
@@ -139,21 +139,28 @@ python3 scripts/main.py "Python 里如何读取文件？" "代码助手"
 
 **使用场景**：当 MaxKB 部署在子路径下时（非根路径），需要配置此项。
 
+**默认值**：`/admin`（标准 MaxKB 部署）
+
 **示例**：
 
 ```bash
-# 场景 1：MaxKB 部署在根路径（默认，无需配置）
-# http://localhost:8080/
+# 场景 1：标准 MaxKB 部署（默认值）
+# http://localhost:8080/admin/api/...
 MAXKB_DOMAIN=http://localhost:8080
-# MAXKB_API_PREFIX 留空或不配置
+MAXKB_API_PREFIX=/admin
 
 # 场景 2：MaxKB 部署在子路径
-# http://example.com/mk/
+# http://example.com/mk/api/...
 MAXKB_DOMAIN=http://example.com
 MAXKB_API_PREFIX=/mk
 
-# 场景 3：MaxKB 部署在多级子路径
-# http://example.com/ai/maxkb/
+# 场景 3：MaxKB 部署在根路径且无 /admin 前缀
+# http://localhost:8080/api/...
+MAXKB_DOMAIN=http://localhost:8080
+MAXKB_API_PREFIX=""
+
+# 场景 4：MaxKB 部署在多级子路径
+# http://example.com/ai/maxkb/api/...
 MAXKB_DOMAIN=http://example.com
 MAXKB_API_PREFIX=/ai/maxkb
 ```
