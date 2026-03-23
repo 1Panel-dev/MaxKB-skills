@@ -71,13 +71,26 @@ cp .env.example .env
 编辑 `.env`：
 
 ```env
-MAXKB_DOMAIN=<maxkb_domain>
+# MaxKB 服务地址（必填）
+MAXKB_DOMAIN=http://localhost:8080
+
+# MaxKB API 前缀（可选）
+# 如果 MaxKB 部署在子路径下（如 http://example.com/mk），配置此项为 /mk
+# 如果 MaxKB 部署在根路径，留空即可
+# MAXKB_API_PREFIX=/mk
+
+# MaxKB 认证（二选一：Token 或 用户名密码）
 MAXKB_USERNAME=admin
 MAXKB_PASSWORD=admin123
+# MAXKB_TOKEN=your_token_here
+
+# MaxKB 工作空间 ID（可选，默认为 default）
 MAXKB_WORKSPACE_ID=default
 ```
 
-> **提示**：用户名/密码与 Token 可同时配置，用户名/密码优先级更高。
+> **提示**：
+> - 用户名/密码与 Token 可同时配置，用户名/密码优先级更高
+> - 如果 MaxKB 部署在子路径下（如 `http://example.com/mk`），请配置 `MAXKB_API_PREFIX=/mk`
 
 ### 2. 列出已发布智能体
 
@@ -116,10 +129,43 @@ python3 scripts/main.py "Python 里如何读取文件？" "代码助手"
 | 变量                 | 说明                              | 默认值                    |
 |----------------------|-----------------------------------|---------------------------|
 | `MAXKB_DOMAIN`       | MaxKB 服务地址                    | `<maxkb_domain>`          | 
+| `MAXKB_API_PREFIX`   | **（可选）** API 路径前缀，适用于子路径部署 | `""` (空字符串) |
 | `MAXKB_TOKEN`        | Bearer Token（管理员 API Key）    | —                         |
 | `MAXKB_WORKSPACE_ID` | 工作空间 ID                       | `default`                 |
 | `MAXKB_USERNAME`     | 登录用户名（优先于 `MAXKB_TOKEN`）| —                         |
 | `MAXKB_PASSWORD`     | 登录密码（优先于 `MAXKB_TOKEN`）  | —                         |
+
+### MAXKB_API_PREFIX 使用说明
+
+**使用场景**：当 MaxKB 部署在子路径下时（非根路径），需要配置此项。
+
+**示例**：
+
+```bash
+# 场景 1：MaxKB 部署在根路径（默认，无需配置）
+# http://localhost:8080/
+MAXKB_DOMAIN=http://localhost:8080
+# MAXKB_API_PREFIX 留空或不配置
+
+# 场景 2：MaxKB 部署在子路径
+# http://example.com/mk/
+MAXKB_DOMAIN=http://example.com
+MAXKB_API_PREFIX=/mk
+
+# 场景 3：MaxKB 部署在多级子路径
+# http://example.com/ai/maxkb/
+MAXKB_DOMAIN=http://example.com
+MAXKB_API_PREFIX=/ai/maxkb
+```
+
+**路径处理规则**：
+
+| API 类型 | 原始路径 | 配置 `MAXKB_API_PREFIX=/mk` 后 |
+|----------|----------|-------------------------------|
+| 数据 API | `/api/workspace/...` | `/mk/api/workspace/...` |
+| 对话 API | `/chat/api/...` | `/chat/api/...` (不变) |
+
+> **注意**：`/chat/` 开头的路径是 MaxKB 前端路由，不会添加 API 前缀。
 
 **认证优先级**：若同时配置了 `MAXKB_USERNAME` + `MAXKB_PASSWORD` 和 `MAXKB_TOKEN`，系统将使用用户名/密码登录获取 Token，忽略 `MAXKB_TOKEN`。
 
