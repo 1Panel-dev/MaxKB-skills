@@ -150,7 +150,7 @@ def _post_sse(path: str, body: dict, token: str) -> str:
 def _login() -> str:
     if MAXKB_USERNAME and  MAXKB_PASSWORD:
         resp = _post_json(
-            "/admin/api/user/login",
+            "/api/user/login",
             {"username": MAXKB_USERNAME, "password": MAXKB_PASSWORD},
         )
         token = resp.get("data", {}).get("token", "")
