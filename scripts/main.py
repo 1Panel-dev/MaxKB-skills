@@ -40,10 +40,28 @@ if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 
 MAXKB_DOMAIN = os.environ.get("MAXKB_DOMAIN", "<maxkb_domain>")
+# MaxKB API 路径前缀，默认为 /admin（标准 MaxKB 部署）
+# 如果 MaxKB 部署在子路径下（如 http://example.com/mk），配置为 /mk
+# 如果 MaxKB 部署在根路径且无 /admin 前缀，留空即可
+MAXKB_API_PREFIX = os.environ.get("MAXKB_API_PREFIX", "/admin").rstrip("/")
 MAXKB_TOKEN = os.environ.get("MAXKB_TOKEN", "")
 MAXKB_WORKSPACE_ID = os.environ.get("MAXKB_WORKSPACE_ID", "default")
 MAXKB_USERNAME = os.environ.get("MAXKB_USERNAME", "")
 MAXKB_PASSWORD = os.environ.get("MAXKB_PASSWORD", "")
+
+def _build_api_path(path: str) -> str:
+    """Build full API path with optional prefix (e.g. /mk)
+    
+    注意：/chat/ 开头的路径是 MaxKB 前端路由，不需要添加 API 前缀
+    - /api/... → /mk/api/...
+    - /chat/... → /chat/... (不变)
+    """
+    if MAXKB_API_PREFIX and not path.startswith(MAXKB_API_PREFIX):
+        # /chat/ 路径不需要前缀（MaxKB 特殊设计）
+        if path.startswith("/chat/"):
+            return path
+        return f"{MAXKB_API_PREFIX}{path}"
+    return path
 
 
 # ── 内部 HTTP 工具 ────────────────────────────────────────────────────
@@ -63,7 +81,8 @@ def _chat_headers(token: str) -> dict:
 
 
 def _get(path: str, token: str = None) -> dict:
-    url = f"{MAXKB_DOMAIN}{path}"
+    api_path = _build_api_path(path)
+    url = f"{MAXKB_DOMAIN}{api_path}"
     headers = _headers() if token is None else _chat_headers(token)
     req = request.Request(url=url, headers=headers, method="GET")
     try:
@@ -78,7 +97,8 @@ def _get(path: str, token: str = None) -> dict:
 
 
 def _post_json(path: str, body: dict, token: str = None) -> dict:
-    url = f"{MAXKB_DOMAIN}{path}"
+    api_path = _build_api_path(path)
+    url = f"{MAXKB_DOMAIN}{api_path}"
     data = json.dumps(body).encode("utf-8")
     headers = _headers() if token is None else _chat_headers(token)
     req = request.Request(url=url, data=data, headers=headers, method="POST")
@@ -98,7 +118,8 @@ def _post_sse(path: str, body: dict, token: str) -> str:
     发送 POST 请求并逐行解析 SSE（Server-Sent Events）流。
     收集所有 operate==true 的 content 片段，直到 is_end==true。
     """
-    url = f"{MAXKB_DOMAIN}{path}"
+    api_path = _build_api_path(path)
+    url = f"{MAXKB_DOMAIN}{api_path}"
     data = json.dumps(body).encode("utf-8")
     req = request.Request(url=url, data=data, headers=_chat_headers(token), method="POST")
     chunks = []
@@ -129,7 +150,7 @@ def _post_sse(path: str, body: dict, token: str) -> str:
 def _login() -> str:
     if MAXKB_USERNAME and  MAXKB_PASSWORD:
         resp = _post_json(
-            "/admin/api/user/login",
+            "/api/user/login",
             {"username": MAXKB_USERNAME, "password": MAXKB_PASSWORD},
         )
         token = resp.get("data", {}).get("token", "")
@@ -145,7 +166,7 @@ def _login() -> str:
 def get_published_agents() -> list:
     """返回所有已发布智能体，每条包含 id / name / desc。"""
     resp = _get(
-        f"/admin/api/workspace/{MAXKB_WORKSPACE_ID}/application/1/10000"
+        f"/api/workspace/{MAXKB_WORKSPACE_ID}/application/1/10000"
     )
     records = resp.get("data", {}).get("records", [])
     agents = [
@@ -185,10 +206,10 @@ def chat_with_agent(agent_id: str, question: str) -> str:
     对指定智能体发起一次对话并返回回答文本。
     """
     # 获取 access_token（匿名会话）
-    token_resp = _get(f"/admin/api/workspace/{MAXKB_WORKSPACE_ID}/application/{agent_id}/access_token")
+    token_resp = _get(f"/api/workspace/{MAXKB_WORKSPACE_ID}/application/{agent_id}/access_token")
     access_token = token_resp.get("data", {}).get("access_token", "")
 
-    # 创建会话
+    # 创建会话（注意：chat API 路径不以 /api 开头）
     chat_resp = _post_json(
         f"/chat/api/auth/anonymous",
         {"access_token": access_token},
